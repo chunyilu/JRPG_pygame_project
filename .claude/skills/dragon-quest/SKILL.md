@@ -44,7 +44,8 @@ switching packages.
 | Turn engine | `dq_battle.py::Battle` — every turn is a **generator yielding log lines** | the state pumps `next(script)` when the log goes idle; no state enum |
 | Encounters | `dq_battle.py::BattleState(app, hero, foe, on_end=…)` | pops itself, reports `'win'/'lose'/'fled'/'gone'` |
 | Worlds | `field.py::World` — grid, walkable, two paint passes, music, encounters, exits | one `FieldState` walks them all; `travel()` steps through a door and `locked` stops the arrival tile bouncing you back. Maps smaller than the screen centre instead of scrolling |
-| Overworld | `data/alefgard.txt` | 64×64 ASCII grid, tween-a-step movement, `PLACES` is the trigger table, `zone_pool()` picks monsters by distance from Tantegel |
+| Overworld | `data/alefgard.txt` | 64×64 ASCII grid, tween-a-step movement, `PLACES` is the trigger table |
+| Danger by geography | `field.py` — `zone_pool()` over `_walk_field()` | monsters are picked by **how far you must walk** from Tantegel, not by ruler distance, so mountains, water and bridges gate progression by themselves. Unreachable-on-foot means top band, which is what makes Charlock the deadliest place in the world. `BAND` is the steps-per-tier dial. A ruler put Charlock — 15 tiles away across the strait — in the bat band, softer than Garinham |
 | The hero's house | `data/home.txt` + `interior.py` | where the game starts; door at `(4,6)` ↔ the `H` tile at `HOME_DOOR` on the overworld |
 | The green land | `tiled_map.py` + PUNY_WORLD's `samplemap1.tmj` | a 50×50 Tiled map behind the Rocky Mountain Cave. Composited once into a backdrop the field blits a viewport from; collision is **derived from the art**, so re-tune `_is_water`/`_is_bridge`/the 0.55 opacity cut if a new map looks wrong |
 | Biome | this Alefgard is a **desert** | sand inland, a green oasis fringe only where water reaches (coast and river), palm groves at the oases, `^` rocky ground in blobs. Scattered single `^` tiles read as a checkerboard once tinted — keep them clumped |
@@ -130,8 +131,16 @@ Each phase must be playable on its own before the next starts.
 - One deliberate break from the original: DQ1's battles are first-person with no
   hero on screen. This one shows the hero stage left, DQ3-style, because the sprite
   pack has the animations for it. Keep the monster stage right.
-- Monster difficulty is a function of distance from Tantegel; bridges mark the
-  jumps. Don't level-gate with invisible walls — the world is open, it just kills you.
+- Monster difficulty is a function of **walking** distance from Tantegel, so terrain
+  gates progression on its own. Don't level-gate with invisible walls — the world is
+  open, it just kills you.
+- Bridges are *supposed* to mark the difficulty jumps and currently do not: deleting
+  all three of Alefgard's `=` tiles costs 3 walkable tiles and splits nothing, because
+  there are no rivers for them to span. 99.4% of the walkable map is one open blob, so
+  five landmarks (Garinham, Kol, Rimuldar, Hauksness, the Grave) all sit 36–39 steps
+  out and draw the identical monster band. Cutting rivers into `alefgard.txt` and
+  putting the bridges on them is what spreads that cluster apart — the gating machinery
+  is already in place and waiting for the geography.
 - The hero's name seeds their stat growth in the original. Optional, but if added,
   keep it a pure function of the name string.
 - `XP_MULT = 20` in `dq_battle.py` is demo pacing. Set it to 1 for the real game.

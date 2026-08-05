@@ -13,6 +13,7 @@ import random
 import sys
 from collections import deque
 from dataclasses import dataclass, replace
+from functools import lru_cache
 from pathlib import Path
 
 import pygame
@@ -154,6 +155,12 @@ class World:
     npcs: dict = None                             # (x, y) -> someone standing there
 
 
+def _world_walk(ch):
+    """The world map's legend, as a named function: _walk_field caches on it, and a
+    fresh lambda every call would be a fresh cache key every call."""
+    return WORLD_TILES[ch].passable
+
+
 def _over_ground(surf, ch, px, py, tx, ty):
     if not tileset.ground(surf, ch, px, py, tx, ty):
         pygame.draw.rect(surf, TILES[ch].color, (px, py, TILE, TILE))
@@ -218,11 +225,12 @@ def _worlds():
         # no markers painted on this one: both its doorways already stand on a
         # landmark the export drew -- the town, and the stone on the north shore
         built["world"] = World(
-            "world", wgrid, lambda ch: WORLD_TILES[ch].passable, None, None,
+            "world", wgrid, _world_walk, None, None,
             "field", True, {WORLD_GATE: ("village", VILLAGE_ENTRY)},
             tiles=WORLD_TILES, backdrop=wbackdrop,
-            # danger by distance from town, the way Alefgard measures it from Tantegel
-            pool=lambda x, y: zone_pool(x, y, WORLD_GATE))
+            # danger by distance from town, the way Alefgard measures it from Tantegel.
+            # Its own grid and legend, or the walk would be measured across Alefgard
+            pool=lambda x, y: zone_pool(x, y, WORLD_GATE, tuple(wgrid), _world_walk))
         # the village road opens onto the world map, and the green land moves one hop
         # out, behind the standing stone on its northern shore
         built["village"].exits.update({gate: ("world", WORLD_GATE) for gate in gates})
@@ -294,11 +302,50 @@ def doorway(here, goal):
     return spot
 
 
-def zone_pool(x, y, home=TANTEGEL):
-    """DQ1 scales by geography, not by level: the further from home, the worse."""
-    dist = max(abs(x - home[0]), abs(y - home[1]))
-    band = min(len(WILD), 1 + dist // 3)     # //3 so the band reaches the last
-    return WILD[max(0, band - 4):band]       # monster within the map's 40-odd tiles
+BAND = 5                                     # steps of walking per step of difficulty,
+                                             # tuned so the far corner of Alefgard (68
+                                             # steps out) lands on the last band
+
+
+@lru_cache(maxsize=8)
+def _walk_field(grid, home, walkable=None):
+    """Steps from `home` to every tile you can walk to. Unreachable tiles are absent.
+
+    Built off reachable() rather than its own search, so it can never disagree with
+    the rules autopilot and the marooned-town check already walk by.
+    """
+    came = reachable(grid, home, walkable)
+    dist = {home: 0}
+    for tile in came:
+        chain = []
+        while tile not in dist:              # first walk back to something measured,
+            chain.append(tile)               # then count forward down the chain --
+            tile = came[tile]                # each tile is measured once
+        for step in reversed(chain):
+            dist[step] = dist[came[step]] + 1
+    return dist
+
+
+def zone_pool(x, y, home=TANTEGEL, grid=None, walkable=None):
+    """DQ1 scales by geography, not by level: the further from home, the worse.
+
+    Far means *walked*, not measured with a ruler. A ruler called Charlock 15 tiles
+    from Tantegel and stocked the Dragonlord's island with bats -- softer than
+    Garinham, the second town you ever visit -- because it is only across the water.
+    A walk says the water is uncrossable until the Rainbow Drop raises the bridge, so
+    Charlock is the furthest place in the world and gets the worst of everything.
+
+    The same switch pays out everywhere: anything behind a mountain range, over a
+    bridge or up a peninsula is now dangerous in proportion to the journey, so the
+    terrain does the gating. That is the job terrain has in DQ1, and it could not do
+    it while this measured straight lines.
+    """
+    dist = _walk_field(tuple(grid) if grid is not None else tuple(load_map()),
+                       home, walkable).get((x, y))
+    # no walk exists: the far side of water, which in DQ1 means Charlock and nowhere
+    # else. The end of the world is the top band, not an average one.
+    band = len(WILD) if dist is None else min(len(WILD), 1 + dist // BAND)
+    return WILD[max(0, band - 4):band]
 
 
 # ------------------------------------------------------------------ drawing
@@ -749,6 +796,24 @@ def selftest():
     assert [m.name for m in zone_pool(*START)] == ["Slime"]
     assert len(zone_pool(53, 30)) == 4
     assert all(m.name != "Dragonlord" for x in (0, 40, 63) for m in zone_pool(x, x))
+
+    # geography does the gating, so the quest route has to be a rising ramp. Walk it in
+    # order -- Tantegel, Brecconary, Erdrick's Cave, the Rain Shrine, Rimuldar, the
+    # Rainbow Shrine, the Rocky Mountain Cave, Charlock -- and the worst thing you can
+    # meet must never once get milder.
+    route = [TANTEGEL, (24, 36), (22, 42), (12, 52), (53, 30), (57, 22), (50, 12), (35, 46)]
+    tiers = [WILD.index(zone_pool(*spot)[-1]) for spot in route]
+    assert tiers == sorted(tiers), f"the difficulty curve dips: {tiers}"
+    assert tiers[0] < tiers[-1], "the route does not get harder at all"
+    # Charlock specifically: unreachable on foot until the Rainbow Drop, so it is the
+    # furthest place in the world and takes the top band. Measured with a ruler it came
+    # out softer than Garinham, the second town you visit -- the bug this guards.
+    assert zone_pool(35, 46) == WILD[-4:], "Charlock is not the deadliest place in Alefgard"
+    # It ties the deepest corner of the mainland rather than beating it, and has to:
+    # the check below demands every wild monster roam somewhere walkable, which means
+    # the top band cannot be Charlock's alone. Nothing may *exceed* it.
+    mainland_worst = max(WILD.index(zone_pool(x, y)[-1]) for x, y in mainland)
+    assert tiers[-1] >= mainland_worst, "somewhere walkable is deadlier than the endgame"
     # ...and every wild monster has somewhere it can actually turn up
     roams = {m.name for x, y in mainland for m in zone_pool(x, y)}
     assert roams == {m.name for m in WILD}, f"never spawns: {set(m.name for m in WILD) - roams}"
