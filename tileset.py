@@ -19,6 +19,8 @@ from pathlib import Path
 
 import pygame
 
+import pixelart
+
 PACK = Path(__file__).parent / "data" / "craftpix-891121-free-2d-rpg-desert-tileset" / "PNG"
 TILE = 32
 
@@ -28,7 +30,9 @@ TILE = 32
 GROUND = {
     ":": ("bg", None),                  # open sand
     "^": ("bg", (226, 212, 190)),       # rocky ground: barely duller, or it grids
-    "A": ("bg", (182, 162, 142)),       # bare rock, procedural peaks drawn over it
+    "A": ("bg", (165, 155, 145)),       # bare rock, procedural peaks drawn over it.
+                                        # Darker than it needs to look: pixelart's
+                                        # palette has to be able to tell it from "^"
     "=": ("bg", None),                  # the bridge paints its own water and planks
     "C": ("bg", None), "T": ("bg", None), "O": ("bg", None),
     "S": ("bg", None), "X": ("bg", None), "H": ("bg", None),
@@ -73,10 +77,12 @@ def load():
             image = _scaled(name)
             if tint:
                 image.fill(tint, special_flags=pygame.BLEND_MULT)
-            TILES[ch] = image
+            TILES[ch] = pixelart.snap(image)     # after the tint: multiplying a
+                                                 # snapped colour unsnaps it again
         for names, height, _ in DECOR.values():
             for name in names:                   # keyed by size too: an object may
-                IMAGES[name, height] = _scaled(name, height)   # serve two terrains
+                image = _scaled(name, height)    # serve two terrains
+                IMAGES[name, height] = image and pixelart.snap(image)
     except (pygame.error, FileNotFoundError):
         IMAGES.clear()                           # a broken pack is no pack
         TILES.clear()

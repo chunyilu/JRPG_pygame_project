@@ -29,6 +29,8 @@ from pathlib import Path
 
 import pygame
 
+import pixelart
+
 DATA = Path(__file__).parent / "data"
 PACK = DATA / "craftpix-net-787868-free-seer-chibi-character-sprites"
 MOBS = DATA / "Pipoya RPG Monster Pack" / "shade"
@@ -76,16 +78,19 @@ def ensure(actor, anim, height):
         images = []
     if not images:
         return False
-    stance = images[0].get_bounding_rect()            # the neutral opening frame
+    # min_alpha=CUT, not the default 1: pixelart.snap() throws away everything fainter
+    # than that, so measuring the body by pixels it is about to delete sizes the sprite
+    # to a halo. Some chibi bosses wear one and came out 10% short.
+    stance = images[0].get_bounding_rect(min_alpha=pixelart.CUT)   # neutral opening frame
     box = stance
     for image in images[1:]:
-        box = box.union(image.get_bounding_rect())
+        box = box.union(image.get_bounding_rect(min_alpha=pixelart.CUT))
     if not (box.w and box.h and stance.h):
         return False
     scale = pygame.transform.smoothscale if smooth else pygame.transform.scale
     f = height / stance.h                             # size by the body, not the canvas
-    SETS[key] = [scale(im.subsurface(box),
-                       (max(1, round(box.w * f)), max(1, round(box.h * f))))
+    SETS[key] = [pixelart.snap(scale(im.subsurface(box),
+                                     (max(1, round(box.w * f)), max(1, round(box.h * f)))))
                  for im in images]
     ANCHOR[key] = (round((stance.centerx - box.centerx) * f),
                    round((box.bottom - stance.bottom) * f))

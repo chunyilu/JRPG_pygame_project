@@ -4,28 +4,22 @@
   "level": 1,
   "exp": 0,
   "gold": 0,
-  "hp": 13,
+  "hp": 15,
   "mp": 0,
   "herbs": 6,
   "asleep": 0,
   "stopped": false,
   "flags": {
-   "seen:home": true,
-   "seen:village": true,
-   "seen:world": true,
-   "seen:greenland": true,
    "seen:alefgard": true,
    "found:Tantegel Castle": true,
    "seen:castle": true,
-   "met:The King's scribe": true,
-   "met:A lady of the court": true,
-   "met:The King": true,
-   "met:A knight of the gate": true
+   "no-battles": false,
+   "found:Brecconary": true
   }
  },
  "place": "alefgard",
  "pos": [
-  25,
-  37
+  26,
+  35
  ]
 }

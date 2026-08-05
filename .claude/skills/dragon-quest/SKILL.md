@@ -53,6 +53,7 @@ switching packages.
 | Sprites | `sprites.py::draw(surf, actor, anim, height, t, cx, feet_y)` | `ACTORS` covers the hero and nine monsters across two pack layouts (chibi frame folders, slime spritesheets). Sized and centred on each sequence's opening stance so poses don't jump; `POSE` in `dq_battle.py` maps a turn's effect to slash/cast/hurt/die |
 | Monster art | `Monster.art` = an `ACTORS` key, or `""` for procedural | loaded lazily — `BattleState.start` calls `sprites.ensure()` so nine species of 900×900 frames aren't read at boot. Height scales off tier |
 | Map art | `tileset.py` — `GROUND` fills a tile, `DECOR` stands an object on it | CraftPix desert pack; the object is hashed from tile coords so it scatters without shimmering. `DECOR[char] = (names, height, density)` is the whole dial |
+| One art style | `pixelart.py::snap()` | the packs disagree — PUNY_WORLD is true 16px pixel art, CraftPix is smoothscaled vector renders. `snap()` puts everything on PUNY_WORLD's grid: one art pixel per `GRID` screen px, `LEVELS` steps per channel, alpha thresholded at `CUT`. Called at the end of `sprites.ensure` and `tileset.load`; **`tiled_map.py` is deliberately exempt** — it is already the target style, and its collision is derived from tile colour, so posterising it would move the water. Any new pack goes through `snap()` |
 | Checks | `selftest()` under `--test` in both modules | extend them, don't start a test framework |
 
 The map is a plain text grid — one char per tile, `TILES` in `field.py` says what

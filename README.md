@@ -46,6 +46,7 @@ done
 | `worldmap.py`, `menu.py`, `title.py` | map screen, command windows, title screen |
 | `village.py`, `castle.py`, `interior.py`, `npc.py` | towns, interiors, dialogue |
 | `sprites.py`, `tileset.py`, `tiled_map.py` | art loaders (CraftPix packs, Tiled maps) |
+| `pixelart.py` | snaps every pack to one pixel grid and palette |
 | `sounds.py` | synthesised square/noise effects, mp3 music |
 | `save.py` | the Adventure Log, JSON |
 
@@ -57,6 +58,11 @@ Maps are plain ASCII text grids (`data/alefgard.txt`, one char per tile).
 `data/` is optional. Tiles, monsters and UI draw procedurally and sound is
 synthesised, so the game runs with the art packs absent — every loader returns
 nothing when files are missing and the caller falls back.
+
+The packs are drawn in different styles — PUNY_WORLD is true 16px pixel art,
+CraftPix ships high-resolution vector renders — so every loader passes its art
+through `pixelart.snap()`, which puts them all on one pixel grid and one
+palette. `GRID` and `LEVELS` in `pixelart.py` are the two dials.
 
 Art packs bundled here: CraftPix desert tileset and Seer chibi sprites, Pipoya
 RPG monster pack, Mana Seed starter pack, PUNY_WORLD Tiled maps. Their vector
