@@ -5,6 +5,5 @@ __pycache__/
 .idea/
 adventure_log.json
 
-# ponytail: vector sources pygame can't load; one .eps is 146MB > GitHub's 100MB limit
-*.eps
-*.ai
+# ponytail: 150MB raw, over GitHub's 100MB file limit — the 77MB .eps.zip beside it is committed instead
+data/craftpix-891121-free-2d-rpg-desert-tileset/EPS/2D_RPG_Desert_Tileset.eps
