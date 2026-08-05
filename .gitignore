@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+.idea/
+adventure_log.json
+
+# ponytail: vector sources pygame can't load; one .eps is 146MB > GitHub's 100MB limit
+*.eps
+*.ai
