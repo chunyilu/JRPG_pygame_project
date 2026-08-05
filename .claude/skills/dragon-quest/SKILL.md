@@ -134,13 +134,21 @@ Each phase must be playable on its own before the next starts.
 - Monster difficulty is a function of **walking** distance from Tantegel, so terrain
   gates progression on its own. Don't level-gate with invisible walls — the world is
   open, it just kills you.
-- Bridges are *supposed* to mark the difficulty jumps and currently do not: deleting
-  all three of Alefgard's `=` tiles costs 3 walkable tiles and splits nothing, because
-  there are no rivers for them to span. 99.4% of the walkable map is one open blob, so
-  five landmarks (Garinham, Kol, Rimuldar, Hauksness, the Grave) all sit 36–39 steps
-  out and draw the identical monster band. Cutting rivers into `alefgard.txt` and
-  putting the bridges on them is what spreads that cluster apart — the gating machinery
-  is already in place and waiting for the geography.
+- Bridges mark the difficulty jumps, and the geography has to keep them honest. Both of
+  Alefgard's rivers originally stopped short of a coast, so every crossing could be
+  walked around and deleting all three `=` tiles split nothing. A river must run
+  **coast to coast** — or into a mountain range that itself reaches the sea — or it is
+  scenery. When editing `alefgard.txt`, three leaks are worth re-checking by hand
+  because they are invisible in the text: a river ending in open ground, a pass through
+  a range (the old `:` at x=14, rows 46–48), and a one-tile shore footpath around a
+  range's end (the old `.` at x=5). `field.py --test` now asserts the south-west bridge
+  is the only way to Cantlin and the Rain Shrine.
+- The remaining cluster is deliberate. Garinham, Kol, Hauksness, Cantlin and the Grave
+  all sit 33–39 steps out and share a band, because DQ1 gates those with *content* —
+  Cantlin's Golem needs the Fairy Flute, Hauksness's Axe Knight guards the armour — not
+  with distance. That is phase 6 work, not map work. Geography gates what geography
+  should: the east (Rimuldar 45, the Rainbow Shrine 57, the Rocky Mountain Cave 60) and
+  Charlock, which has no walk at all.
 - The hero's name seeds their stat growth in the original. Optional, but if added,
   keep it a pure function of the name string.
 - `XP_MULT = 20` in `dq_battle.py` is demo pacing. Set it to 1 for the real game.

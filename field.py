@@ -792,6 +792,16 @@ def selftest():
                and any((x + a, y + b) in island for a, b in STEPS)]
     assert straits, "no single water tile links the mainland to Charlock"
 
+    # the south-west bridge is a gate, not scenery: Cantlin and the Rain Shrine sit
+    # behind it and nothing else reaches them. This map used to offer three ways round --
+    # the river stopped eight rows short of the coast, a pass punched through the range
+    # at x=14, and a one-tile footpath ran down the west shore at x=5 -- so deleting
+    # every bridge on the map split off nothing at all.
+    detour = reachable(grid, START, npcs={(18, 55)})       # npcs= blocks a tile for us
+    for name, spot in (("Cantlin", (10, 57)), ("the Rain Shrine", (12, 52))):
+        assert spot in mainland, f"{name} cannot be reached at all"
+        assert spot not in detour, f"{name} can be reached without crossing the bridge"
+
     # encounters get worse with distance and never spawn the Dragonlord
     assert [m.name for m in zone_pool(*START)] == ["Slime"]
     assert len(zone_pool(53, 30)) == 4
