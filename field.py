@@ -19,6 +19,7 @@ from pathlib import Path
 import pygame
 
 import castle
+import highland
 import interior
 import menu
 import npc
@@ -97,6 +98,26 @@ GREEN_TILES = {
     tiled_map.WATER: Tile("river", False, 0, (30, 140, 190)),
 }
 
+# The Highlands, hand-authored in data/highland.txt: a valley climbing north to a
+# volcano, reached from the world map's northern beach. Its own legend, because the same
+# characters mean temperate things here -- `.` is meadow rather than oasis fringe, and
+# `:` is a river bank rather than the desert everything in Alefgard stands on.
+HIGHLAND_TILES = {
+    "~": Tile("water", False, 0, (34, 96, 168)),
+    ":": Tile("bank", True, 6, (226, 208, 152)),
+    ".": Tile("meadow", True, 7, (108, 168, 82)),
+    "*": Tile("wood", True, 16, (46, 106, 58)),
+    "^": Tile("crag", True, 13, (140, 130, 112)),
+    "A": Tile("mountain", False, 0, (110, 104, 98)),
+    "n": Tile("snowfield", True, 12, (228, 232, 238)),
+    "V": Tile("Mount Cinder", False, 0, (228, 232, 238)),   # snow: the ground under it
+    "=": Tile("bridge", True, 0, (226, 208, 152)),
+    "C": Tile("castle", True, 0, (108, 168, 82)),
+    "T": Tile("town", True, 0, (108, 168, 82)),
+    "O": Tile("cave", True, 0, (140, 130, 112)),
+    "S": Tile("shrine", True, 0, (228, 232, 238)),
+}
+
 TANTEGEL = (20, 34)
 START = (21, 34)                                  # outside the castle gate
 HOME_DOOR = (21, 35)                              # the hero's village, next door
@@ -112,6 +133,9 @@ WORLD_GATE = (27, 23)                             # the world map: the road out 
 WORLD_STONE = (22, 8)                             # ...and the stone on the north shore
 CASTLE_DOOR = (10, 14)                            # Tantegel's throne room: the door,
 CASTLE_SPAWN = (10, 13)                           # and the carpet just inside it
+WORLD_SHORE = (16, 3)                             # the world map's northern beach, the
+LANDING = (18, 52)                                # furthest coast on it, and the shore
+                                                  # of the Highlands it opens onto
 
 # The trigger table: what sits on which tile. Phase 3 turns these into interiors.
 PLACES = {
@@ -121,6 +145,11 @@ PLACES = {
     (39, 26): "the Swamp Cave", (53, 30): "Rimuldar", (57, 22): "the Rainbow Shrine",
     (12, 52): "the Rain Shrine", (10, 57): "Cantlin", (34, 57): "Hauksness",
     (35, 46): "Charlock Castle",
+}
+
+HIGHLAND_PLACES = {
+    (18, 48): "Cinderhold", (24, 38): "Vale End", (10, 22): "the Wolfwood Cave",
+    (16, 8): "the Mouth of Mount Cinder", (21, 9): "the Shrine of Ash",
 }
 
 WILD = [m for m in MONSTERS if m.name != "Dragonlord"]   # he waits in Charlock
@@ -159,6 +188,10 @@ def _world_walk(ch):
     """The world map's legend, as a named function: _walk_field caches on it, and a
     fresh lambda every call would be a fresh cache key every call."""
     return WORLD_TILES[ch].passable
+
+
+def _highland_walk(ch):
+    return HIGHLAND_TILES[ch].passable
 
 
 def _over_ground(surf, ch, px, py, tx, ty):
@@ -237,6 +270,22 @@ def _worlds():
         if "greenland" in built:
             built["world"].exits[WORLD_STONE] = ("greenland", GREEN_ROAD)
             built["greenland"].exits[GREEN_ROAD] = ("world", WORLD_STONE)
+
+        # The Highlands, off the world map's northern beach -- the furthest coast on it,
+        # so the valley is a late-game journey before its own climb even starts. Hung off
+        # the world map because that is the only thing that makes it reachable; with the
+        # export absent there is no shore to leave from.
+        hgrid = load_map("highland.txt", HIGHLAND_TILES)
+        hback = highland.paint(hgrid, HIGHLAND_TILES)
+        _mark(hback, LANDING, cave=False)             # the timber gate down to the shore
+        _mark(wbackdrop, WORLD_SHORE, cave=False)     # ...and its twin on the world map
+        built["highland"] = World(
+            "highland", hgrid, _highland_walk, None, None, "field", True,
+            {LANDING: ("world", WORLD_SHORE)},
+            tiles=HIGHLAND_TILES, backdrop=hback, places=HIGHLAND_PLACES,
+            # danger by the climb, measured from the shore you land on
+            pool=lambda x, y: zone_pool(x, y, LANDING, tuple(hgrid), _highland_walk))
+        built["world"].exits[WORLD_SHORE] = ("highland", LANDING)
     return built
 
 

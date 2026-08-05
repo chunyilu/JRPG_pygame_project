@@ -25,6 +25,21 @@ cd /Users/luchunyi/Documents/Personal_GitHub/dragon_quest_game
 .venv/bin/python tiled_map.py --test
 ```
 
+When authoring a new region, build the gates in rather than repairing them later — three
+rules, all of them learned the hard way from Alefgard:
+
+1. **A river must span its interior rim to rim.** Walk the channel column by column and
+   fill every row between one column's channel and the next, so it is provably one
+   connected chain; then the cut is guaranteed however much it meanders. A straight band
+   cuts just as well and looks like a ruled line.
+2. **Put the crossings at opposite ends.** Two bridges in the same column are one gate.
+3. **Audit, don't eyeball.** Cut each gate and count the connected components; walk the
+   distance field from the entrance and read the landmark spread. Every leak in Alefgard
+   was invisible in the text file and obvious in a component count.
+
+Terrain regions are base-biome-per-band plus round blobs. Per-tile randomness reads as
+television static — worse than the rectangles it replaces.
+
 Adding a world is one entry in `field._worlds()` plus an exit tile on each side.
 Four more PUNY_WORLD sample maps sit unused in `data/map/PUNY_WORLD_v1/Tiled/` —
 `tiled_map.load("samplemap3.tmj")` is the whole cost of a fifth region.
@@ -54,6 +69,7 @@ switching packages.
 | Sprites | `sprites.py::draw(surf, actor, anim, height, t, cx, feet_y)` | `ACTORS` covers the hero and nine monsters across two pack layouts (chibi frame folders, slime spritesheets). Sized and centred on each sequence's opening stance so poses don't jump; `POSE` in `dq_battle.py` maps a turn's effect to slash/cast/hurt/die |
 | Monster art | `Monster.art` = an `ACTORS` key, or `""` for procedural | loaded lazily — `BattleState.start` calls `sprites.ensure()` so nine species of 900×900 frames aren't read at boot. Height scales off tier |
 | Map art | `tileset.py` — `GROUND` fills a tile, `DECOR` stands an object on it | CraftPix desert pack; the object is hashed from tile coords so it scatters without shimmering. `DECOR[char] = (names, height, density)` is the whole dial |
+| The Highlands | `data/highland.txt` + `highland.py` | 40×56 valley climbing north to Mount Cinder, off the world map's northern beach (`WORLD_SHORE`, its furthest coast). **The one map here built gated instead of repaired into it**: two meandering rivers each spanning rim to rim with a single crossing at opposite ends, then one mountain pass into the snow bowl. Cutting any of the three splits the map; the five landmarks land at 4/32/64/88/92 steps, so they take five different bands where Alefgard's five cluster in two. Painted once into a backdrop by `highland.paint()`, like `tiled_map` and `worldmap` hand theirs over |
 | One art style | `pixelart.py::snap()` | the packs disagree — PUNY_WORLD is true 16px pixel art, CraftPix is smoothscaled vector renders. `snap()` puts everything on PUNY_WORLD's grid: one art pixel per `GRID` screen px, `LEVELS` steps per channel, alpha thresholded at `CUT`. Called at the end of `sprites.ensure` and `tileset.load`; **`tiled_map.py` is deliberately exempt** — it is already the target style, and its collision is derived from tile colour, so posterising it would move the water. Any new pack goes through `snap()` |
 | Checks | `selftest()` under `--test` in both modules | extend them, don't start a test framework |
 

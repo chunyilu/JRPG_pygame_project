@@ -45,6 +45,7 @@ done
 | `dq_battle.py` | DQ1 damage/escape/crit math, turn engine, `BattleState` |
 | `worldmap.py`, `menu.py`, `title.py` | map screen, command windows, title screen |
 | `village.py`, `castle.py`, `interior.py`, `npc.py` | towns, interiors, dialogue |
+| `highland.py` | the Highlands: a 40×56 valley climbing to a volcano |
 | `sprites.py`, `tileset.py`, `tiled_map.py` | art loaders (CraftPix packs, Tiled maps) |
 | `pixelart.py` | snaps every pack to one pixel grid and palette |
 | `sounds.py` | synthesised square/noise effects, mp3 music |
@@ -52,6 +53,12 @@ done
 
 Maps are plain ASCII text grids (`data/alefgard.txt`, one char per tile).
 `field.py --test` BFSes them and fails if a town is unreachable.
+
+Danger comes from **walking** distance to the region's entrance, not straight-line
+distance, so rivers, mountains and bridges gate progression by themselves. A region is
+only as well paced as its chokepoints: the Highlands (`data/highland.txt`) spread five
+landmarks across 4–92 steps with three gates, where Alefgard's five sit within six steps
+of each other.
 
 ## Assets
 
